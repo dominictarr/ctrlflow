@@ -36,6 +36,7 @@ exports['group with error'] = function (test){
 exports['group with args'] = function (test){
   var error = new Error("ERR")
     , g = ctrl.group(function (err,results){
+
     it(err).equal(error)
     it(results).property('length',3)
     it(results).has([

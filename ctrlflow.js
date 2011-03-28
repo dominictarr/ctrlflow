@@ -29,7 +29,6 @@ exports.group = function (done){
       error = error || arguments[0]
       called ++
       if(called == c){
-        console.log(funx)
         done(error, args)
       }
     }
@@ -69,6 +68,9 @@ function Queue(jobs,width){
 
   var self = this
   
+  if(!jobs)
+    throw new Error("ctrlflow.width cannot process " + jobs + ", expected an array")
+  
   this.keys = Object.keys(jobs)
   this.running = 0
   this.jobs = jobs
@@ -102,4 +104,60 @@ Queue.prototype = {
         this.start()
     }
 }
+function toArray (args){
+  var a = []
+  for(var i = 0; i < args.length; i ++)
+    a.push(args[i])
+  return a
+}
 
+exports.seq = function (){
+  var array = [].concat(Array.isArray(arguments[0]) ? [].shift.apply(arguments) : [])
+    , onError = [].pop.apply(arguments)
+    , done = function (){}
+  
+  function sequence (){
+    if(!onError)
+      sequence.throws()
+
+// done = 'function' == typeof this.next ? this.next : [].pop.apply(arguments) //test for this.
+    var args = toArray(arguments)
+    
+    function next (){
+      var f = array.shift()
+      if(!f)
+        done();
+      args = toArray(arguments)
+      args.push(next)
+      try{
+        f.apply({next:next},args)
+      } catch (err){
+        if(onError)
+          onError(err)
+        else
+          throw err
+      }    
+    }
+    
+    next.apply({next:next},args)
+  }
+  sequence.go = function (){
+    sequence()
+  }
+  sequence.done = function (_done){
+    done = _done
+  }
+  sequence.onError = function (_onError){
+    onError = _onError
+  }
+  sequence.throws = function (){
+    done = function (err){ 
+      if(!err)
+        throw new Error('Threw falsey error:' + err )
+      throw err    
+    }
+    return sequence    
+  }
+  //option to pass error to next function? no, I can't imagine using that.
+  return sequence
+}

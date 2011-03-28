@@ -30,6 +30,59 @@ also, you can pass the calback directly into group():
     func2(args,g())
     func3(args,g())
 
+##seq##
+
+serial execution of a list of functions.
+
+    ctrl.seq([
+      function (x){
+        ...
+        this.next(null,1)
+      },
+      function (err,x){
+        ...
+        this.next(null,2)
+      },
+      function (err,x){
+    }])(0)
+    
+but also, custom error handling.
+
+    ctrl.seq([
+      function (x){
+        ...
+        this.next(null,1)
+      },
+      function (err,x){
+        ...
+        this.next(null,2)
+      },
+      function (err,x){
+    }]).error(function (){
+      //handle error
+    })(0)
+
+by default errors are thrown. execution of sequence stops if there is an error.
+
+##curried callbacks ##
+
+the callback is also added to the end of the argument list.
+
+    ctrl.seq([
+      function (x,next){
+        ...
+        next(null,1)
+      },
+      function (err,x,next){
+        ...
+        next(null,2)
+      },
+      curry(asyncFunction)
+      ])(0)
+
+
+
+
 ##defer##
 
 sometimes you have a object that needs an async start up before certain methods are called. 
