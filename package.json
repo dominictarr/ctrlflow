@@ -1,7 +1,7 @@
 {
   "name": "ctrlflow",
   "description": "yet another async control flow lib",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "homepage": "https://github.com/dominictarr/ctrlflow",
   "repository": {
     "type": "git",
@@ -11,6 +11,9 @@
   "main": "./ctrlflow.js",
   "directories": {
     "lib": "."
+  },
+  "dependencies":{
+    "curry": "0.0.x"
   },
   "devDependencies":{
     "meta-test": ">=0.0.2"
