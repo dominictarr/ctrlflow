@@ -126,7 +126,7 @@ exports.seq = function (){
     function next (){
       var f = array.shift()
       if(!f)
-        done();
+        return done();
       args = toArray(arguments)
       args.push(next)
       try{
@@ -143,12 +143,15 @@ exports.seq = function (){
   }
   sequence.go = function (){
     sequence()
+    return sequence
   }
   sequence.done = function (_done){
     done = _done
+    return sequence
   }
   sequence.onError = function (_onError){
     onError = _onError
+    return sequence
   }
   sequence.throws = function (){
     done = function (err){ 
