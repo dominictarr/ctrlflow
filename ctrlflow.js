@@ -30,10 +30,7 @@ exports.group = function (groups,done) {
       args[x] = arguments
       error = error || arguments[0]
       called ++
-      console.log(c,called)
       if(called === c){
-        console.log('!!!!!!!!!!!!!!!!!', done.toString())
-        console.log('DONE!',error, args)
         done(error, args)
       }
     }
@@ -43,7 +40,6 @@ exports.group = function (groups,done) {
 
   if(groups) {
     d.each(groups, function (value,key) {
-      console.log('call:', key)
       var cb = group(key)
       if('function' !== typeof value)
         exports.seq([value])(cb)
@@ -151,8 +147,6 @@ exports.seq = function (){
       args = toArray(arguments)
 
       if(Array.isArray(f)) {
-        console.log(f)
-
         args = f
         f = args.shift()
       } else if ('object' === typeof f) {
