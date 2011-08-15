@@ -1,8 +1,8 @@
 
 var curry = require('curry')
+  , d = require('d-utils')
 /*
   group: get the cb's of several functions.
-
 */
 
 function findErr (funx){
@@ -117,17 +117,27 @@ exports.seq = function (){
     , done = function (){}
   
   function sequence (){
-    if(!onError)
-      sequence.throws()
 
 // done = 'function' == typeof this.next ? this.next : [].pop.apply(arguments) //test for this.
     var args = toArray(arguments)
+    if('function' == typeof d.last(args))
+      onError = done = args.pop()
+    if(!onError)
+      sequence.throws()
+
     
     function next (){
       var f = array.shift()
-      if(!f)
-        return done();
+      if(!f) return done()
+
       args = toArray(arguments)
+
+      if(Array.isArray(f)) {
+        console.log(f)
+
+        args = f
+        f = args.shift()
+      }
       args.push(next)
       try{
         f.apply({next:next},args)
@@ -137,9 +147,9 @@ exports.seq = function (){
         else
           throw err
       }    
+
     }
-    
-    next.apply({next:next},args)
+    next.apply(null,args)
   }
   sequence.go = function (){
     sequence()
