@@ -139,7 +139,6 @@ exports.seq = function (){
     if(!onError)
       sequence.throws()
 
-    
     function next (){
       var f = array.shift()
       if(!f) return done()
@@ -150,12 +149,12 @@ exports.seq = function (){
         args = f
         f = args.shift()
       } else if ('object' === typeof f) {
-        f = function () {
-        var g = exports.group(this.next)
-          d.each(f, function (value,key) {
-            value(g(key))
-          })
-        }
+          var grp = f
+          f = function () {
+          var args = [].slice.call(arguments)
+            , cb = args.pop()
+            exports.group(grp, cb)
+          }
       }
       args.push(next)
       try{
@@ -165,8 +164,7 @@ exports.seq = function (){
           onError(err)
         else
           throw err
-      }    
-
+      }
     }
     next.apply(null,args)
   }
