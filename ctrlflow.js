@@ -12,28 +12,46 @@ function findErr (funx){
   }
 }
 
-exports.group = function (done){
+exports.group = function (groups,done) {
   var c = 0, i = 0, funx = [], args = [], called = 0, error = null
+
+  if(!done) done = groups, groups = null
   if(!done)
     done = function (){
       throw new Error("group was never given a 'done' callback")
     }
   var group =
-  function group (){
+  function group (name){
     c++
-    var x = i ++
+    var x = name || i ++
     funx[x] = function (){
       if(args[x])
         throw new Error ('function called twice')
       args[x] = arguments
       error = error || arguments[0]
       called ++
-      if(called == c){
+      console.log(c,called)
+      if(called === c){
+        console.log('!!!!!!!!!!!!!!!!!', done.toString())
+        console.log('DONE!',error, args)
         done(error, args)
       }
     }
+
     return funx[x]
   }
+
+  if(groups) {
+    d.each(groups, function (value,key) {
+      console.log('call:', key)
+      var cb = group(key)
+      if('function' !== typeof value)
+        exports.seq([value])(cb)
+      else
+        value.apply({next: cb}, [cb])
+    })
+  }
+
   group.done = function (_done){
     done = _done
     return group
@@ -120,7 +138,7 @@ exports.seq = function (){
 
 // done = 'function' == typeof this.next ? this.next : [].pop.apply(arguments) //test for this.
     var args = toArray(arguments)
-    if('function' == typeof d.last(args))
+    if(!d.empty(args) && 'function' == typeof d.last(args))
       onError = done = args.pop()
     if(!onError)
       sequence.throws()
@@ -137,6 +155,13 @@ exports.seq = function (){
 
         args = f
         f = args.shift()
+      } else if ('object' === typeof f) {
+        f = function () {
+        var g = exports.group(this.next)
+          d.each(f, function (value,key) {
+            value(g(key))
+          })
+        }
       }
       args.push(next)
       try{
