@@ -126,18 +126,17 @@ function toArray (args){
 }
 
 exports.seq = function (){
-  var array = [].concat(Array.isArray(arguments[0]) ? [].shift.apply(arguments) : [])
+  var _array = [].concat(Array.isArray(arguments[0]) ? [].shift.apply(arguments) : [])
     , onError = [].pop.apply(arguments)
     , done = function (){}
 
-  function sequence (){
+return function (){
+    var array = _array.slice()
     var isDone = false
 // done = 'function' == typeof this.next ? this.next : [].pop.apply(arguments) //test for this.
     var args = toArray(arguments)
     if(!d.empty(args) && 'function' == typeof d.last(args))
       onError = done = args.pop()
-    if(!onError)
-      sequence.throws()
     args.unshift(null)//add a fake null error (so that next is always called like a callback.
     next.apply(null,args)
 
@@ -182,26 +181,4 @@ exports.seq = function (){
       }
     }
   }
-  sequence.go = function (){
-    sequence()
-    return sequence
-  }
-  sequence.done = function (_done){
-    done = _done
-    return sequence
-  }
-  sequence.onError = function (_onError){
-    onError = _onError
-    return sequence
-  }
-  sequence.throws = function (){
-    done = function (err){ 
-      if(!err)
-        throw new Error('Threw falsey error:' + err )
-      throw err    
-    }
-    return sequence    
-  }
-  //option to pass error to next function? no, I can't imagine using that.
-  return sequence
 }
