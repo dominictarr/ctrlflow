@@ -129,21 +129,29 @@ exports.seq = function (){
   var array = [].concat(Array.isArray(arguments[0]) ? [].shift.apply(arguments) : [])
     , onError = [].pop.apply(arguments)
     , done = function (){}
-  
-  function sequence (){
 
+  function sequence (){
+    var isDone = false
 // done = 'function' == typeof this.next ? this.next : [].pop.apply(arguments) //test for this.
     var args = toArray(arguments)
     if(!d.empty(args) && 'function' == typeof d.last(args))
       onError = done = args.pop()
     if(!onError)
       sequence.throws()
+    args.unshift(null)//add a fake null error (so that next is always called like a callback.
+    next.apply(null,args)
 
     function next (){
       var f = array.shift()
-      if(!f) return done()
-
       args = toArray(arguments)
+
+      if(!f) {
+        isDone = true
+        return done.apply(null,args)
+      }
+
+      var err = args.shift()
+      if(err) return isDone = true, done(err) //callback on any error
 
       if(Array.isArray(f)) {
         args = f
@@ -156,17 +164,23 @@ exports.seq = function (){
             exports.group(grp, cb)
           }
       }
-      args.push(next)
-      try{
-        f.apply({next:next},args)
-      } catch (err){
-        if(onError)
-          onError(err)
+      var n = 0
+      function _next () {
+        if(!(n ++))
+          next.apply(null,[].slice.call(arguments))
         else
+          console.log('next called more than once! oops!')
+      }
+      args.push(_next)
+      try{
+        f.apply({next:_next},args)
+      } catch (err){
+        if(isDone)
           throw err
+        isDone = true
+        return done(err)
       }
     }
-    next.apply(null,args)
   }
   sequence.go = function (){
     sequence()
