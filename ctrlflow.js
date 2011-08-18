@@ -1,9 +1,6 @@
 
 var curry = require('curry')
   , d = require('d-utils')
-/*
-  group: get the cb's of several functions.
-*/
 
 function findErr (funx){
   for(var i in funx){
@@ -13,7 +10,7 @@ function findErr (funx){
 }
 
 var group = exports.group = function (groups,done) {
-    console.log(groups,done)
+
   var funx = function () {
     var args = [].slice.call(arguments)
       , cb = args.pop()
@@ -28,7 +25,7 @@ var group = exports.group = function (groups,done) {
     d.each(groups, function (steps, name) {
       var _args = args.slice(), n = 0
       _args.push(function () {
-        console.log(name, n)
+
         if(!n++) {
           var args = [].slice.call(arguments)
           finished ++
@@ -38,9 +35,9 @@ var group = exports.group = function (groups,done) {
         } else 
           console.log('group callback called more than once. ignored.')
       })
-      console.log(_args)
+
       started ++
-      seq(Array.isArray(steps) ? steps : [steps]).apply(null,_args)
+      seq(steps).apply(null,_args)
     })
 
     ready = true
@@ -52,55 +49,6 @@ var group = exports.group = function (groups,done) {
   else 
     return funx
 }
-
-/*exports.group = function (groups,done) {
-  var c = 0, i = 0, funx = [], args = [], called = 0, error = null, running = false
-
-  if(!done) done = groups, groups = null
-  if(!done)
-    done = function (){
-      throw new Error("group was never given a 'done' callback")
-    }
-  var group =
-  function group (name){
-    c++
-    var x = name || i ++
-    function checkDone () {
-      if(called === c && running){
-        done(error, args)
-      }    
-    }
-
-    funx[x] = function (){
-      if(args[x])
-        throw new Error ('function called twice')
-      args[x] = arguments
-      error = error || arguments[0]
-      called ++
-      checkDone()
-    }
-
-    return funx[x]
-  }
-
-  if(groups) {
-    d.each(groups, function (value,key) {
-      var cb = group(key, true)
-      if('function' !== typeof value)
-        exports.seq(value)(cb)
-      else
-        value.apply({next: cb}, [cb])
-    })
-    running = true
-    checkDone()
-  }
-
-  group.done = function (_done){
-    done = _done
-    return group
-  }
-  return group
-}*/
 
 exports.defer = function (obj,commands){
 
@@ -188,12 +136,7 @@ var step = exports.step = function (s) {
   } 
   // call a group of function in parallel
   if ('object' === typeof s) {
-      var grp = s
-      return function () {
-      var args = [].slice.call(arguments)
-        , cb = args.pop()
-        exports.group(grp, cb)
-      }
+    return group(s)
   }
   //just a normal function
   return s
@@ -205,8 +148,11 @@ var step = exports.step = function (s) {
 //
 
 var seq = exports.seq = function (){
-  var _array = [].concat(Array.isArray(arguments[0]) ? [].shift.apply(arguments) : [])
-    , done = function () {}
+
+  var _array = Array.isArray(arguments[0]) 
+        ? [].shift.call(arguments) 
+        : [].slice.call(arguments)
+    , done = function () {}  
 
 // return function that shifts the first step, calls it with args the args, and passes
 
