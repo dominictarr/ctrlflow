@@ -125,44 +125,66 @@ function toArray (args){
   return a
 }
 
+var step = exports.step = function (s) {
+  //return a function.
+  
+  // [function, arg1, arg2,...] 
+  // call function with these args instead of what the last function callbacked
+  if(Array.isArray(s)) {
+    return function () {
+      var cb = [].pop.call(arguments)
+        , args = s
+      s = args.shift()
+      args.push(cb)
+      s.apply(this,args)
+    }
+  } 
+  // call a group of function in parallel
+  if ('object' === typeof s) {
+      var grp = s
+      return function () {
+      var args = [].slice.call(arguments)
+        , cb = args.pop()
+        exports.group(grp, cb)
+      }
+  }
+  //just a normal function
+  return s
+}
+
 exports.seq = function (){
   var _array = [].concat(Array.isArray(arguments[0]) ? [].shift.apply(arguments) : [])
-    , onError = [].pop.apply(arguments)
-    , done = function (){}
+    , done = function () {}
 
-return function (){
+//return function that shifts the first step, calls it with args the args, and passes
+
+  return function (){
     var array = _array.slice()
     var isDone = false
 // done = 'function' == typeof this.next ? this.next : [].pop.apply(arguments) //test for this.
     var args = toArray(arguments)
     if(!d.empty(args) && 'function' == typeof d.last(args))
-      onError = done = args.pop()
+      done = args.pop()
+
     args.unshift(null)//add a fake null error (so that next is always called like a callback.
     next.apply(null,args)
 
     function next (){
-      var f = array.shift()
-      args = toArray(arguments)
+      var f
+        , args = toArray(arguments)
+
+      while(!(f = array.shift()) && array.length) ;
 
       if(!f) {
         isDone = true
-        return done.apply(null,args)
+        return done.apply(null, args)
       }
 
       var err = args.shift()
       if(err) return isDone = true, done(err) //callback on any error
 
-      if(Array.isArray(f)) {
-        args = f
-        f = args.shift()
-      } else if ('object' === typeof f) {
-          var grp = f
-          f = function () {
-          var args = [].slice.call(arguments)
-            , cb = args.pop()
-            exports.group(grp, cb)
-          }
-      }
+      f = step(f)
+
       var n = 0
       function _next () {
         if(!(n ++))
