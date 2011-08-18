@@ -1,7 +1,7 @@
 {
   "name": "ctrlflow",
   "description": "yet another async control flow lib",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "homepage": "https://github.com/dominictarr/ctrlflow",
   "repository": {
     "type": "git",

@@ -12,8 +12,49 @@ function findErr (funx){
   }
 }
 
-exports.group = function (groups,done) {
-  var c = 0, i = 0, funx = [], args = [], called = 0, error = null
+var group = exports.group = function (groups,done) {
+    console.log(groups,done)
+  var funx = function () {
+    var args = [].slice.call(arguments)
+      , cb = args.pop()
+      , isDone = false
+      , started = 0, finished = 0, ready = false, results = {}, error
+
+    function checkDone () {
+      if(error || (ready && started == finished) && !isDone)
+        isDone = true, cb(error, results)
+    }
+
+    d.each(groups, function (steps, name) {
+      var _args = args.slice(), n = 0
+      _args.push(function () {
+        console.log(name, n)
+        if(!n++) {
+          var args = [].slice.call(arguments)
+          finished ++
+          results[name] = args
+          error = error || args[0]
+          checkDone ()
+        } else 
+          console.log('group callback called more than once. ignored.')
+      })
+      console.log(_args)
+      started ++
+      seq(Array.isArray(steps) ? steps : [steps]).apply(null,_args)
+    })
+
+    ready = true
+    checkDone()
+  }
+  
+  if(done)
+    funx(done)
+  else 
+    return funx
+}
+
+/*exports.group = function (groups,done) {
+  var c = 0, i = 0, funx = [], args = [], called = 0, error = null, running = false
 
   if(!done) done = groups, groups = null
   if(!done)
@@ -24,15 +65,19 @@ exports.group = function (groups,done) {
   function group (name){
     c++
     var x = name || i ++
+    function checkDone () {
+      if(called === c && running){
+        done(error, args)
+      }    
+    }
+
     funx[x] = function (){
       if(args[x])
         throw new Error ('function called twice')
       args[x] = arguments
       error = error || arguments[0]
       called ++
-      if(called === c){
-        done(error, args)
-      }
+      checkDone()
     }
 
     return funx[x]
@@ -40,12 +85,14 @@ exports.group = function (groups,done) {
 
   if(groups) {
     d.each(groups, function (value,key) {
-      var cb = group(key)
+      var cb = group(key, true)
       if('function' !== typeof value)
-        exports.seq([value])(cb)
+        exports.seq(value)(cb)
       else
         value.apply({next: cb}, [cb])
     })
+    running = true
+    checkDone()
   }
 
   group.done = function (_done){
@@ -53,7 +100,7 @@ exports.group = function (groups,done) {
     return group
   }
   return group
-}
+}*/
 
 exports.defer = function (obj,commands){
 
@@ -152,11 +199,16 @@ var step = exports.step = function (s) {
   return s
 }
 
-exports.seq = function (){
+//
+// I want to refactor this into something more elegant. 
+// I think it's the difference between the fist/last steps and the other steps that is causing
+//
+
+var seq = exports.seq = function (){
   var _array = [].concat(Array.isArray(arguments[0]) ? [].shift.apply(arguments) : [])
     , done = function () {}
 
-//return function that shifts the first step, calls it with args the args, and passes
+// return function that shifts the first step, calls it with args the args, and passes
 
   return function (){
     var array = _array.slice()
