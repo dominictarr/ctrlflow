@@ -1,109 +1,88 @@
 #yet another nodejs async control flow lib#
 
-there are already a number of ndoejs control flow libs, notably, creationix/step and substack/seq and i've investigated them, but decided it's worth inventing your own, so that 
-
-  1. you really understand how it works.
+there are already a number of ndoejs control flow libs, notably, creationix/step and substack/seq and I've investigated them, but decided it's worth inventing your own, 
+so that I really understand how it works. 
   
-control flow is so fundamential... it best to deeply understand it. so, I'm writing my own, and I suspect you should too.
+async control flow is so fundamential to the node js programmer, 
+and your tools should fit your hands perfectly,
+so, I'm writing my own, and I suspect you should too.
 
-##group##
+## ctrl.seq
 
-collect the results of a number of async functions:
+`ctrl.seq` combines an array of *steps* into one single async callback function.
 
-    var g = require('ctrlflow').group()
+*steps* are 
 
-    func1(args,g())//g() will return a function collect it's args for g.done
-    func2(args,g())
-    func3(args,g())
+  * _async functions_, (callback is last arg, or this.next) 
+  function will be called with the callback args of the previous function
+  * `[func, arg1, arg2,...]` (arrays with a function as the first arg, )
+  `func` will be called with the `arg1, arg2,` etc, instead of the previous callback.
+  * object literal of steps. `{a: [STEP], b: [STEP]}` each property will be exectued in parallel.
 
-    g.done(function (){
-      console.log("func1,2,3 called back")
-    })
+when a step is called with the args of the previous callback, 
+the error argument (the first arg) will be removed.
 
-also, you can pass the calback directly into group():
+if the first arg `!= null` the sequence will be terminated and the overall 
+callback will be called with the error. see *ERROR HANDLING*
 
-    var g = require('ctrlflow').group(function (){
-      console.log("func1,2,3 called back")
-    })
+``` js
+  var ctrl = require('ctrlflow')
+  var go = 
+  ctrl.seq([
+    function () {
+      this.next()
+    },
+    [asyncFunction, 1, 4, 'hello'],
+    { a: function () {this.next() } //a, b, c are executed in parallel
+    , b: [
+        [asyncFunction, 1]
+      , [asyncFunction, 2]
+      , [asyncFunction, 3] 
+      ]
+    , c: { //c itself has two parallel steps!
+        x: function () {this.next() } 
+      , y: [[asyncFunction]]
+      }}
+  ])
+  //seq returned a function, call it, passing a callback:
+  
+  go(1, 2, 3, function (err) {
+    //passing in a callback that will be called when the sequence is complete
+  })
 
-    func1(args,g())//g() will return a function collect it's args for g.done
-    func2(args,g())
-    func3(args,g())
+```
 
-##seq##
+## ERROR HANDLING
 
-serial execution of a list of functions.
-
-    ctrl.seq([
-      function (x){
-        ...
-        this.next(null,1)
-      },
-      function (err,x){
-        ...
-        this.next(null,2)
-      },
-      function (err,x){
-    }])(0)
-    
-but also, custom error handling.
-
-    ctrl.seq([
-      function (x){
-        ...
-        this.next(null,1)
-      },
-      function (err,x){
-        ...
-        this.next(null,2)
-      },
-      function (err,x){
-    }]).error(function (){
-      //handle error
-    })(0)
-
-by default errors are thrown. execution of sequence stops if there is an error.
-
-##curried callbacks ##
-
-the callback is also added to the end of the argument list.
-
-    ctrl.seq([
-      function (x,next){
-        ...
-        next(null,1)
-      },
-      function (err,x,next){
-        ...
-        next(null,2)
-      },
-      curry(asyncFunction)
-      ])(0)
+if any step throws or callsback with an error, 
+the callback passed to `go` will be called with the error.
+no further steps will be called.
 
 
+``` js
+  var ctrl = require('ctrlflow')
+  var go = 
+  ctrl.seq([
+    function () {
+      if(Math.random() < 0.5)
+        this.next(new Error('ERROR PASSED TO CALLBACK'))
+      else
+        throw new Error('ERROR THROWN')
+    },
+  ])
+  //seq returned a function, call it, passing a callback:
+  
+  go(function (err) {
+    //go will get called back with the error every time.
+  })
 
+```
 
-##defer##
+## grabbing the callback
 
-sometimes you have a object that needs an async start up before certain methods are called. 
+the callback is always added as the last argument, and as `this.next`
+the best way to get the callback is to pop it off the arguments 
 
-`ctrlflow.defer()` can be used to record async method calls, and play them back when the reciever is ready:
-
-    var async = {}//object to add defurred methods to,
-    var ready = ctrl.defer(async,['do'])//defer(obj,listOfMethodNames) 
-                                        //-> returns ready(obj) method, for when functions can be executed.
-
-    //can call named methods on the object.
-    //they will not be executed yet.
-    async.do('hello',function (x){
-      console.log('.do() called back:',x)
-    })
-
-    var __async = {do: function (hi,funx){funx(hi)} }
-    //call ready(ObjectWhichHasRealFunctions) when it's time.
-    ready(__async)
-
-    //from now on, calls will be executed immediately.
-    async.do('goodbye',function (x){
-      console.log('.do() called back again:',x)
-    })
+``` js
+ var callback = [].slice.call(arguments)
+```
