@@ -2,6 +2,9 @@
 var curry = require('curry')
   , d = require('d-utils')
 
+exports = module.exports = seq
+exports.seq = seq
+
 function findErr (funx){
   for(var i in funx){
     if(funx[i].arguments[0])
@@ -142,12 +145,26 @@ var step = exports.step = function (s) {
   return s
 }
 
+exports.toAsync = function (func, a, b) {
+  return function () {
+    var args = [].slice.call(arguments)
+      , callback = args.pop()
+      , r
+    try {
+      r = func.apply(this, args)
+    } catch (err) {
+      return callback (err)
+    }
+    callback (null, r)  
+  }
+}
+
 //
 // I want to refactor this into something more elegant. 
 // I think it's the difference between the fist/last steps and the other steps that is causing
 //
 
-var seq = exports.seq = function (){
+function seq () {
 
   var _array = Array.isArray(arguments[0]) 
         ? [].shift.call(arguments) 

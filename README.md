@@ -1,15 +1,66 @@
-#yet another nodejs async control flow lib#
+#ctrlflow#
 
-there are already a number of ndoejs control flow libs, notably, creationix/step and substack/seq and I've investigated them, but decided it's worth inventing your own, 
-so that I really understand how it works. 
-  
-async control flow is so fundamential to the node js programmer, 
-and your tools should fit your hands perfectly,
-so, I'm writing my own, and I suspect you should too.
+Asyncronous control flow is important in most node.js programs, 
+and it seems that every one has written a library to prevent callbacks getting out of hand. 
+most notably, creationix's `step` SubStack's `seq`, isaacs's `slide`, and caolan`s async.
 
-## ctrl.seq
+I think these modules all do some things right, but still leave room for improvement.
+`ctrlflow` combines the best features of these modules with a simple & flexible API and a 
+focus on robust error handling.
 
-`ctrl.seq` combines an array of *steps* into one single async callback function.
+## ctrl.seq(ArrayOFSteps) //=> asyncronous function which calls each step in sequence.
+
+`ctrl.seq` takes an array of steps, and returns an asyncronous function that will call 
+those steps in sequence, and callback when the last step finishes, or when a step errors.
+
+each step is wrapped in a try ... catch, and if a function throws, 
+it will stop executing the steps and pass the error to the final callback.
+
+##basic example
+
+``` js
+var go = 
+  ctrl.seq([
+    fs.readFile,
+    function (buffer, callback) {
+      callback(null, JSON.parse(buffer.toString()))
+    }
+  ])
+
+go('/path/to/config.json', function (err, obj) {
+
+  if(err)
+    throw err //print to stderr and exit
+  console.log(obj)
+})
+```
+
+This example illistrates several things. 
+Firstly, `seq` returns an ayncronous function, `go`.
+The args passed to `go` are passed to the first step, `fs.readFile`, 
+and the results of `fs.readFile` (minus the err parameter) are passed to the second step, 
+which parses the file, then callsback.
+
+If the file does not exist, readFile will callback with an error. 
+If the file exists, but is not valid JSON, `JSON.parse` will throw syncronously. 
+(this will be caught be `seq`, so beware that mulitple types of errors be passed to the callback.
+
+##parallel execution example
+
+sometimes you want to several async steps in parallel, ctrlflow has a literal syntax for this too!
+
+``` js
+
+  crtl.seq
+
+
+```
+
+
+
+
+
+
 
 *steps* are 
 
@@ -86,3 +137,4 @@ the best way to get the callback is to pop it off the arguments
 ``` js
  var callback = [].slice.call(arguments)
 ```
+

@@ -21,9 +21,6 @@
   , "it-is": "*"
   , "curry": "*"
   },
-  "scripts": {
-    "test": "meta-test test/*.js"
-  },
   "engines": {
     "node": ">=0.2.0"
   }
