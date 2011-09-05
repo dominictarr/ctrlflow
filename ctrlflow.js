@@ -145,20 +145,7 @@ var step = exports.step = function (s) {
   return s
 }
 
-exports.toAsync = function (func, a, b) {
-  return function () {
-    var args = [].slice.call(arguments)
-      , callback = args.pop()
-      , r
-    try {
-      r = func.apply(this, args)
-    } catch (err) {
-      return callback (err)
-    }
-    callback (null, r)  
-  }
-}
-
+exports.toAsync = d.toAsync
 //
 // I want to refactor this into something more elegant. 
 // I think it's the difference between the fist/last steps and the other steps that is causing

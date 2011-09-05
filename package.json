@@ -14,7 +14,7 @@
   },
   "dependencies":{
     "curry": "0.0.x",
-    "d-utils": "~1.2"
+    "d-utils": "~1.4"
   },
   "devDependencies":{
     "meta-test": ">=0.0.2"
