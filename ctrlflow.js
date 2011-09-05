@@ -32,7 +32,7 @@ var group = exports.group = function (groups,done) {
         if(!n++) {
           var args = [].slice.call(arguments)
           finished ++
-          results[name] = args
+          results[name] = args.slice(1)
           error = error || args[0]
           checkDone ()
         } else 
