@@ -169,13 +169,13 @@ function seq () {
   var _array = Array.isArray(arguments[0]) 
         ? [].shift.call(arguments) 
         : [].slice.call(arguments)
-    , done = function () {}  
 
 // return function that shifts the first step, calls it with args the args, and passes
 
   return function (){
     var array = _array.slice()
     var isDone = false
+    var done = function () {}  
 // done = 'function' == typeof this.next ? this.next : [].pop.apply(arguments) //test for this.
     var args = toArray(arguments)
     if(!d.empty(args) && 'function' == typeof d.last(args))
