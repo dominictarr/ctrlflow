@@ -31,9 +31,11 @@ var cat100 =
   ])
 
 //switch the names of two files, then log their first 100 chars, al get an directory listing too.
-if(!file1 || !file2)
-  throw new Error('try `cd ctrlflow/examples && node switchNames.js hello.txt bye.txt`')
-
+if(!file1 || !file2) {
+  file1 = path.join(__dirname, 'hello.txt')
+  file2 = path.join(__dirname, 'bye.txt')
+  console.log('try `cd ctrlflow/examples && node switchNames.js hello.txt bye.txt`')
+}
 ctrl([
   [switchFiles, file1, file2],
   {

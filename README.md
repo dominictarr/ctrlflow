@@ -4,11 +4,11 @@ Asyncronous control flow is important in most node.js programs,
 and it seems that every one has written a library to prevent callbacks getting out of hand. 
 most notably, creationix's `step` SubStack's `seq`, isaacs's `slide`, and caolan`s async.
 
-I think these modules all do some things right, but still leave room for improvement.
+These modules all do somethings right, but still leave room for improvement.
 `ctrlflow` combines the best features of these modules with a simple & flexible API and a 
 focus on robust error handling.
 
-## ctrl.seq(ArrayOFSteps) //=> asyncronous function which calls each step in sequence.
+## ctrl(ArrayOFSteps) //=> asyncronous function which calls each step in sequence.
 
 `ctrl.seq` takes an array of steps, and returns an asyncronous function that will call 
 those steps in sequence, and callback when the last step finishes, or when a step errors.
@@ -20,7 +20,7 @@ it will stop executing the steps and pass the error to the final callback.
 
 ``` js
 var go = 
-  ctrl.seq([
+  ctrl([
     fs.readFile,
     function (buffer, callback) {
       callback(null, JSON.parse(buffer.toString()))
@@ -28,7 +28,6 @@ var go =
   ])
 
 go('/path/to/config.json', function (err, obj) {
-
   if(err)
     throw err //print to stderr and exit
   console.log(obj)
@@ -47,44 +46,38 @@ If the file exists, but is not valid JSON, `JSON.parse` will throw syncronously.
 
 ##parallel execution example
 
-sometimes you want to several async steps in parallel, ctrlflow has a literal syntax for this too!
+Sometimes you want to several async steps in parallel, ctrlflow has a literal syntax for this too!
+
+a simple usecase for this is to call stat on a file, and, just incase it is a symbolic link, 
+call lstat as well. (lstat will stat the link file, not the file it links to)
 
 ``` js
+ctrl([{
+  stat: fs.stat
+  lstat: fs.lstat
+}])
+(filename, function (stats) {
 
-  crtl.seq
-
+  console.log(stats)
+  //
+  // { stat: [...] //stat results
+  // , lstat: [...] //lstat result
+  // }
+})
 
 ```
 
-
-
-
-
-
-
-*steps* are 
-
-  * _async functions_, (callback is last arg, or this.next) 
-  function will be called with the callback args of the previous function
-  * `[func, arg1, arg2,...]` (arrays with a function as the first arg, )
-  `func` will be called with the `arg1, arg2,` etc, instead of the previous callback.
-  * object literal of steps. `{a: [STEP], b: [STEP]}` each property will be exectued in parallel.
-
-when a step is called with the args of the previous callback, 
-the error argument (the first arg) will be removed.
-
-if the first arg `!= null` the sequence will be terminated and the overall 
-callback will be called with the error. see *ERROR HANDLING*
 
 ``` js
   var ctrl = require('ctrlflow')
   var go = 
   ctrl.seq([
     function () {
+      //call the next step
       this.next()
     },
-    [asyncFunction, 1, 4, 'hello'],
-    { a: function () {this.next() } //a, b, c are executed in parallel
+    [asyncFunction, 1, 4, 'hello'], // short for: function () {asyncFunction(1, 4, 'hello', this.next)}
+    { a: function () {this.next() } // a, b, c are executed in parallel
     , b: [
         [asyncFunction, 1]
       , [asyncFunction, 2]
