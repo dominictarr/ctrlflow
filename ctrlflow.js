@@ -1,9 +1,13 @@
 
 var curry = require('curry')
   , d = require('d-utils')
+  , parallel = {}
+  , serial = {}
 
 exports = module.exports = seq
 exports.seq = seq
+exports.parallel = parallel 
+exports.serial = serial
 
 function findErr (funx){
   for(var i in funx){
@@ -12,7 +16,7 @@ function findErr (funx){
   }
 }
 
-var group = exports.group = function (groups,done) {
+var group = exports.group = function (groups, done) {
 
   var funx = function () {
     var args = [].slice.call(arguments)
@@ -204,5 +208,70 @@ function seq () {
         return done(err)
       }
     }
+  }
+}
+
+//return a function(array, callback) that will apply an iteration to an array in parrallel
+//usally, you wont need the key, so ignore it by default?
+
+parallel.map = function (iterator, useKey) {
+  return function (obj, callback) {
+    //console.log(obj, callback)
+    if(!obj)
+      return callback(null, obj)
+    var results = Array.isArray(obj) ? [] : {}
+      , isDone = false
+      , called = 0
+      , finished = 0
+      , started = false
+
+    d.each(obj, function (value, key) {
+      called ++
+      function next (err, result) {
+        finished ++
+        if(err && !isDone)
+          return isDone = true, callback(err)
+        results[key] = result
+        if(started && finished == called && !isDone)
+          isDone = true, callback(null, results)
+      }
+        var safe = d.safe(iterator)
+        if (useKey) safe(value, key, next)
+        else safe(value, next)
+    })
+
+    started = true
+    if(finished == called && !isDone) //incase the callbacks where actualy syncronous.
+      isDone = true, callback(null, results)
+    
+  }
+}
+
+serial.map = function (iterator, useKey) {
+  return function (obj, callback) {
+    //console.log(obj, callback)
+    if(!obj)
+      return callback(null, obj)
+    var results = Array.isArray(obj) ? [] : {}
+      , keys = Object.keys(obj)
+      , isDone = false
+      , started = false
+
+    function step() {
+      if(!keys.length && !isDone)
+        return isDone = true, callback(null, results)
+      var key = keys.shift()
+      var value = obj[key]
+      function next (err, result) {
+        if(err && !isDone)
+          return isDone = true, callback(err)
+        results[key] = result
+        step()
+      }
+        var safe = d.safe(iterator)
+        if (useKey) safe(value, key, next)
+        else safe(value, next)
+    }
+    step()    
   }
 }

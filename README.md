@@ -8,10 +8,10 @@ These modules all do somethings right, but still leave room for improvement.
 `ctrlflow` combines the best features of these modules with a simple & flexible API and a 
 focus on robust error handling.
 
-## ctrl(ArrayOFSteps) //=> asyncronous function which calls each step in sequence.
+## var go = ctrl(ArrayOFSteps); go(args,...,callback).
 
-`ctrl.seq` takes an array of steps, and returns an asyncronous function that will call 
-those steps in sequence, and callback when the last step finishes, or when a step errors.
+`ctrl` takes an array of steps, and combines them into one asyncronous function that will call 
+each step in sequence, and callback when the last step finishes, or when a step errors.
 
 each step is wrapped in a try ... catch, and if a function throws, 
 it will stop executing the steps and pass the error to the final callback.
@@ -44,12 +44,14 @@ If the file does not exist, readFile will callback with an error.
 If the file exists, but is not valid JSON, `JSON.parse` will throw syncronously. 
 (this will be caught be `seq`, so beware that mulitple types of errors be passed to the callback.
 
-##parallel execution example
+##parallel group example
 
 Sometimes you want to several async steps in parallel, ctrlflow has a literal syntax for this too!
 
 a simple usecase for this is to call stat on a file, and, just incase it is a symbolic link, 
 call lstat as well. (lstat will stat the link file, not the file it links to)
+
+##all together
 
 ``` js
 ctrl([{
@@ -57,13 +59,8 @@ ctrl([{
   lstat: fs.lstat
 }])
 (filename, function (stats) {
-
   console.log(stats)
-  //
-  // { stat: [...] //stat results
-  // , lstat: [...] //lstat result
-  // }
-})
+})  
 
 ```
 
