@@ -62,6 +62,7 @@ ctrl([{
 
 ```
 
+##all together
 
 ``` js
   var ctrl = require('ctrlflow')
@@ -86,7 +87,7 @@ ctrl([{
   //seq returned a function, call it, passing a callback:
   
   go(1, 2, 3, function (err) {
-    //passing in a callback that will be called when the sequence is complete
+    //passing in a callback that will be called when the entire tree/sequence is complete
   })
 
 ```
