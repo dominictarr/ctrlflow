@@ -51,14 +51,12 @@ Sometimes you want to several async steps in parallel, ctrlflow has a literal sy
 a simple usecase for this is to call stat on a file, and, just incase it is a symbolic link, 
 call lstat as well. (lstat will stat the link file, not the file it links to)
 
-##all together
-
 ``` js
 ctrl([{
   stat: fs.stat
   lstat: fs.lstat
 }])
-(filename, function (stats) {
+(filename, function (err, stats) {
   console.log(stats)
 })  
 
