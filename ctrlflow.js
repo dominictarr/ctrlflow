@@ -247,24 +247,37 @@ parallel.map = function (iterator, useKey) {
   }
 }
 
+function maybeManyErrors(errors) {
+  if(!errors.length)
+    return null
+  if(errors.length == 1)
+    return errors[0]
+  var err = new Error('many errors occured during async opperation')
+  err.errors = errors
+  return err
+}
+
 serial.map = function (iterator, useKey) {
   return function (obj, callback) {
     //console.log(obj, callback)
     if(!obj)
       return callback(null, obj)
     var results = Array.isArray(obj) ? [] : {}
+      , errors = []
       , keys = Object.keys(obj)
       , isDone = false
       , started = false
 
     function step() {
-      if(!keys.length && !isDone)
-        return isDone = true, callback(null, results)
+      if(!keys.length && !isDone) 
+        return isDone = true, callback(maybeManyErrors(errors), results)
+
       var key = keys.shift()
       var value = obj[key]
       function next (err, result) {
-        if(err && !isDone)
-          return isDone = true, callback(err)
+        if(err)
+          errors.push(err)
+//          return isDone = true, callback(err)
         results[key] = result
         step()
       }
