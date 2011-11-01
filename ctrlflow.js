@@ -165,8 +165,10 @@ function seq () {
 
   return function (){
     var array = _array.slice()
-    var isDone = false
-    var done = function () {}  
+      , self = this
+      , isDone = false
+      , index = 0
+      , done = function () {}  
 // done = 'function' == typeof this.next ? this.next : [].pop.apply(arguments) //test for this.
     var args = toArray(arguments)
     if(!d.empty(args) && 'function' == typeof d.last(args))
@@ -178,29 +180,37 @@ function seq () {
     function next (){
       var f
         , args = toArray(arguments)
-
-      while(!(f = array.shift()) && array.length) ;
-
+        , current = index ++
+        ;
+      //skip null items.
+      while(!(f = array.shift()) && array.length) current = index ++;
       if(!f) {
         isDone = true
         return done.apply(null, args)
       }
 
       var err = args.shift()
-      if(err) return isDone = true, done(err) //callback on any error
-
+      if(err) {
+        if(err && err.message)
+          err.stack = '(at ctrlflow step:' + current + '):' + err.stack
+        return isDone = true, done(err) //callback on any error
+      }
       f = step(f)
 
       var n = 0
       function _next () {
-        if(!(n ++))
+        if(!(n ++) && !isDone) {
           next.apply(null,[].slice.call(arguments))
+        }
         else
-          console.log('next called more than once! oops!')
+          console.log('next called more than once! in step:' + current )
       }
       args.push(_next)
       try{
-        f.apply({next:_next},args)
+        //get rid of this and this.next()
+        //IO is the best time for a ctrlflow lib, 
+        //OO seems to fit IO
+        f.apply(self === global ? {next: _next} : self, args)
       } catch (err){
         if(isDone)
           throw err
@@ -220,6 +230,7 @@ parallel.map = function (iterator, useKey) {
     if(!obj)
       return callback(null, obj)
     var results = Array.isArray(obj) ? [] : {}
+      , errors = []
       , isDone = false
       , called = 0
       , finished = 0
@@ -229,11 +240,12 @@ parallel.map = function (iterator, useKey) {
       called ++
       function next (err, result) {
         finished ++
-        if(err && !isDone)
-          return isDone = true, callback(err)
+        if(err)
+          errors.push(err)
+          //return isDone = true, callback(err)
         results[key] = result
         if(started && finished == called && !isDone)
-          isDone = true, callback(null, results)
+          isDone = true, callback(maybeManyErrors(errors), results)
       }
         var safe = d.safe(iterator)
         if (useKey) safe(value, key, next)
