@@ -40,7 +40,7 @@ var group = exports.group = function (groups, done) {
           error = error || args[0]
           checkDone ()
         } else 
-          console.log('group callback called more than once. ignored.')
+          console.error('group callback called more than once. ignored.')
       })
 
       started ++
@@ -202,8 +202,14 @@ function seq () {
         if(!(n ++) && !isDone) {
           next.apply(null,[].slice.call(arguments))
         }
-        else
-          console.log('next called more than once! in step:' + current )
+        else {
+          console.error('next called more than once! in step:' + current)
+          if(n > 1)
+            console.error('called ' + n + ' times')
+          if(isDone)
+            console.error('called after finished')
+          console.error(new Error().stack )
+        }
       }
       args.push(_next)
       try{
@@ -226,7 +232,6 @@ function seq () {
 
 parallel.map = function (iterator, useKey) {
   return function (obj, callback) {
-    //console.log(obj, callback)
     if(!obj)
       return callback(null, obj)
     var results = Array.isArray(obj) ? [] : {}
@@ -244,8 +249,9 @@ parallel.map = function (iterator, useKey) {
           errors.push(err)
           //return isDone = true, callback(err)
         results[key] = result
-        if(started && finished == called && !isDone)
+        if(started && finished == called) {
           isDone = true, callback(maybeManyErrors(errors), results)
+        }
       }
         var safe = d.safe(iterator)
         if (useKey) safe(value, key, next)
@@ -253,8 +259,8 @@ parallel.map = function (iterator, useKey) {
     })
 
     started = true
-    if(finished == called && !isDone) //incase the callbacks where actualy syncronous.
-      isDone = true, callback(null, results)
+    if(finished == called ) //incase the callbacks where actualy syncronous.
+      isDone = true, callback(maybeManyErrors(errors), results)
     
   }
 }
@@ -264,14 +270,13 @@ function maybeManyErrors(errors) {
     return null
   if(errors.length == 1)
     return errors[0]
-  var err = new Error('many errors occured during async opperation')
+  var err = new Error('many errors occured during async operation')
   err.errors = errors
   return err
 }
 
 serial.map = function (iterator, useKey) {
   return function (obj, callback) {
-    //console.log(obj, callback)
     if(!obj)
       return callback(null, obj)
     var results = Array.isArray(obj) ? [] : {}
