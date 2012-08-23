@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/dominictarr/ctrlflow.png)](http://travis-ci.org/dominictarr/ctrlflow)
 #ctrlflow#
 
 Asyncronous control flow is important in most node.js programs, 
